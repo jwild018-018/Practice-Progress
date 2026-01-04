@@ -1,6 +1,19 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Plus, Check, Clock, Target, ChevronRight, Sparkles, X, Loader2, AlertCircle, LogOut } from 'lucide-react';
+import { Plus, Check, Clock, Target, ChevronRight, Sparkles, X, Loader2, AlertCircle, LogOut, ChevronDown, User, Download, Table, FileText, BarChart3 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line
+} from 'recharts';
 
 // ----------------------------------------------------------------------------
 // SUPABASE CLIENT & API HELPERS
@@ -149,7 +162,7 @@ function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id, session.access_token);
       } else {
         setLoading(false);
       }
@@ -159,7 +172,7 @@ function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchProfile(session.user.id);
+        await fetchProfile(session.user.id, session.access_token);
       } else {
         setProfile(null);
         setLoading(false);
@@ -169,19 +182,21 @@ function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId) => {
+  const fetchProfile = async (userId, accessToken) => {
     console.log('fetchProfile called for:', userId);
     
     try {
+      const token = accessToken || supabaseAnonKey;
+      
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       const response = await fetch(
-        `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`,
+        `${supabaseUrl}/rest/v1/profiles?select=*&id=eq.${userId}`,
         {
           headers: {
             'apikey': supabaseAnonKey,
-            'Authorization': `Bearer ${supabaseAnonKey}`
+            'Authorization': `Bearer ${token}`
           },
           signal: controller.signal
         }
@@ -339,6 +354,438 @@ function AuthScreen() {
   );
 }
 
+// ----------------------------------------------------------------------------
+// PRO COMPONENTS
+// ----------------------------------------------------------------------------
+
+// Chart colors
+const CHART_COLORS = {
+  hitting: '#10b981',    // emerald
+  pitching: '#6366f1',   // indigo
+  fielding: '#f59e0b',   // amber
+  conditioning: '#ef4444' // red
+};
+
+// Athlete Selector (Pro only - always shows for Pro users)
+function AthleteSelector({ athletes, currentAthlete, onSelectAthlete, onAddAthlete, isPro }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Free users only see current athlete name (no selector)
+  if (!isPro) {
+    return (
+      <h1 className="text-lg font-semibold text-stone-900">
+        {currentAthlete?.name}'s Practice
+      </h1>
+    );
+  }
+
+  // Pro users always get the dropdown (even with 1 athlete, so they can add more)
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 hover:bg-stone-100 rounded-lg px-2 py-1 -ml-2 transition"
+      >
+        <h1 className="text-lg font-semibold text-stone-900">
+          {currentAthlete?.name}'s Practice
+        </h1>
+        <ChevronDown className={`w-4 h-4 text-stone-400 transition ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-xl shadow-lg border border-stone-200 py-1 z-50">
+            <div className="px-3 py-2 border-b border-stone-100">
+              <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Switch Athlete</p>
+            </div>
+            
+            {athletes.map(athlete => (
+              <button
+                key={athlete.id}
+                onClick={() => {
+                  onSelectAthlete(athlete);
+                  setIsOpen(false);
+                }}
+                className={`w-full px-4 py-2.5 text-left hover:bg-stone-50 flex items-center gap-3 ${
+                  athlete.id === currentAthlete?.id ? 'bg-emerald-50' : ''
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  athlete.id === currentAthlete?.id ? 'bg-emerald-100' : 'bg-stone-100'
+                }`}>
+                  <User className={`w-4 h-4 ${
+                    athlete.id === currentAthlete?.id ? 'text-emerald-600' : 'text-stone-500'
+                  }`} />
+                </div>
+                <span className={`font-medium ${
+                  athlete.id === currentAthlete?.id ? 'text-emerald-700' : 'text-stone-700'
+                }`}>
+                  {athlete.name}
+                </span>
+              </button>
+            ))}
+            
+            <div className="border-t border-stone-100 mt-1 pt-1">
+              <button
+                onClick={() => {
+                  onAddAthlete();
+                  setIsOpen(false);
+                }}
+                className="w-full px-4 py-2.5 text-left text-emerald-600 hover:bg-stone-50 flex items-center gap-3"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
+                  <Plus className="w-4 h-4 text-emerald-600" />
+                </div>
+                <span className="font-medium">Add Athlete</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Weekly Minutes Bar Chart (Pro only)
+function WeeklyMinutesChart({ sessions }) {
+  const weeklyData = useMemo(() => {
+    const weeks = [];
+    const now = new Date();
+    
+    for (let i = 3; i >= 0; i--) {
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay() - (i * 7));
+      weekStart.setHours(0, 0, 0, 0);
+      
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      weeks.push({
+        weekStart,
+        weekEnd,
+        label: i === 0 ? 'This Week' : i === 1 ? 'Last Week' : `${i + 1}w ago`,
+        minutes: 0,
+        practices: 0
+      });
+    }
+    
+    sessions.forEach(s => {
+      const [year, month, day] = s.date.split('-').map(Number);
+      const sessionDate = new Date(year, month - 1, day);
+      
+      weeks.forEach(week => {
+        if (sessionDate >= week.weekStart && sessionDate <= week.weekEnd) {
+          week.minutes += s.duration;
+          week.practices += 1;
+        }
+      });
+    });
+    
+    return weeks;
+  }, [sessions]);
+
+  return (
+    <div className="h-40">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+          <XAxis 
+            dataKey="label" 
+            tick={{ fontSize: 11, fill: '#78716c' }}
+            axisLine={{ stroke: '#e7e5e4' }}
+            tickLine={false}
+          />
+          <YAxis 
+            tick={{ fontSize: 11, fill: '#78716c' }}
+            axisLine={false}
+            tickLine={false}
+            width={35}
+          />
+          <Tooltip 
+            formatter={(value) => [`${value} min`, 'Duration']}
+            contentStyle={{
+              backgroundColor: 'white',
+              border: '1px solid #e7e5e4',
+              borderRadius: '8px',
+              fontSize: '13px'
+            }}
+          />
+          <Bar dataKey="minutes" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// Focus Distribution Pie Chart (Pro only)
+function FocusDistributionChart({ sessions, focusOptions }) {
+  const focusData = useMemo(() => {
+    const counts = {};
+    
+    sessions.forEach(s => {
+      (s.focus || []).forEach(f => {
+        counts[f] = (counts[f] || 0) + 1;
+      });
+    });
+    
+    return focusOptions
+      .map(f => ({
+        id: f.id,
+        name: f.label,
+        emoji: f.emoji,
+        value: counts[f.id] || 0,
+        color: CHART_COLORS[f.id] || '#78716c'
+      }))
+      .filter(d => d.value > 0);
+  }, [sessions, focusOptions]);
+
+  if (focusData.length === 0) {
+    return <p className="text-stone-400 text-sm italic text-center py-4">No practice data yet</p>;
+  }
+
+  const total = focusData.reduce((sum, d) => sum + d.value, 0);
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="h-32 w-32 flex-shrink-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={focusData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              innerRadius={25}
+              outerRadius={50}
+              paddingAngle={2}
+            >
+              {focusData.map((entry) => (
+                <Cell key={entry.id} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip 
+              formatter={(value, name) => [`${value} sessions`, name]}
+              contentStyle={{
+                backgroundColor: 'white',
+                border: '1px solid #e7e5e4',
+                borderRadius: '8px',
+                fontSize: '13px'
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      
+      <div className="flex-1 space-y-1.5">
+        {focusData.map(item => (
+          <div key={item.id} className="flex items-center gap-2">
+            <div 
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
+              style={{ backgroundColor: item.color }}
+            />
+            <span className="text-xs text-stone-600 flex-1">{item.emoji} {item.name}</span>
+            <span className="text-xs font-medium text-stone-900">
+              {Math.round((item.value / total) * 100)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 30-Day Activity Line Chart (Pro only)
+function ActivityLineChart({ sessions }) {
+  const activityData = useMemo(() => {
+    const days = [];
+    const now = new Date();
+    
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const dateStr = date.toISOString().split('T')[0];
+      const dayMinutes = sessions
+        .filter(s => s.date === dateStr)
+        .reduce((sum, s) => sum + s.duration, 0);
+      
+      days.push({
+        date: dateStr,
+        day: date.getDate(),
+        minutes: dayMinutes
+      });
+    }
+    
+    return days;
+  }, [sessions]);
+
+  return (
+    <div className="h-28">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={activityData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+          <XAxis 
+            dataKey="day" 
+            tick={{ fontSize: 10, fill: '#a8a29e' }}
+            axisLine={{ stroke: '#e7e5e4' }}
+            tickLine={false}
+            interval={6}
+          />
+          <YAxis hide />
+          <Tooltip 
+            formatter={(value) => [`${value} min`, 'Duration']}
+            labelFormatter={(label, payload) => {
+              const item = payload[0]?.payload;
+              if (item) {
+                return new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              }
+              return label;
+            }}
+            contentStyle={{
+              backgroundColor: 'white',
+              border: '1px solid #e7e5e4',
+              borderRadius: '8px',
+              fontSize: '13px'
+            }}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="minutes" 
+            stroke="#10b981" 
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, fill: '#10b981' }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// Export Button (Pro only)
+function ExportButton({ sessions, athlete, isPro }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!isPro || !sessions || sessions.length === 0) return null;
+
+  const exportCSV = () => {
+    const headers = ['Date', 'Duration (min)', 'Focus Areas', 'Note', 'Reflection'];
+    const rows = sessions.map(s => [
+      s.date,
+      s.duration,
+      (s.focus || []).join('; '),
+      (s.note || '').replace(/"/g, '""'),
+      (s.reflection || '').replace(/"/g, '""')
+    ]);
+    
+    const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
+    downloadFile(csv, `${athlete.name}-practices.csv`, 'text/csv');
+    setIsOpen(false);
+  };
+
+  const exportJSON = () => {
+    const data = {
+      athlete: { name: athlete.name, id: athlete.id },
+      exportedAt: new Date().toISOString(),
+      totalPractices: sessions.length,
+      totalMinutes: sessions.reduce((sum, s) => sum + s.duration, 0),
+      practices: sessions
+    };
+    
+    downloadFile(JSON.stringify(data, null, 2), `${athlete.name}-practices.json`, 'application/json');
+    setIsOpen(false);
+  };
+
+  const downloadFile = (content, filename, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition"
+      >
+        <Download className="w-3.5 h-3.5" />
+        Export
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute top-full right-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-stone-200 py-1 z-50">
+            <button onClick={exportCSV} className="w-full px-3 py-2 text-left text-sm hover:bg-stone-50 flex items-center gap-2">
+              <Table className="w-4 h-4 text-stone-400" />
+              <span className="text-stone-700">CSV Spreadsheet</span>
+            </button>
+            <button onClick={exportJSON} className="w-full px-3 py-2 text-left text-sm hover:bg-stone-50 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-stone-400" />
+              <span className="text-stone-700">JSON Data</span>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Pro Charts Card (wraps all charts)
+function ProChartsCard({ sessions, focusOptions, athlete, isPro }) {
+  if (!isPro) return null;
+  
+  if (sessions.length === 0) {
+    return (
+      <div className="card p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <BarChart3 className="w-4 h-4 text-violet-500" />
+          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Practice Trends</p>
+          <span className="px-2 py-0.5 text-xs font-medium bg-violet-100 text-violet-700 rounded-full">Pro</span>
+        </div>
+        <p className="text-stone-400 text-sm italic text-center py-6">
+          Log some practices to see your trends!
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card p-5 space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-violet-500" />
+          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Practice Trends</p>
+          <span className="px-2 py-0.5 text-xs font-medium bg-violet-100 text-violet-700 rounded-full">Pro</span>
+        </div>
+        <ExportButton sessions={sessions} athlete={athlete} isPro={isPro} />
+      </div>
+      
+      <div>
+        <p className="text-sm font-medium text-stone-700 mb-2">Weekly Progress</p>
+        <WeeklyMinutesChart sessions={sessions} />
+      </div>
+      
+      <div className="border-t border-stone-100 pt-5">
+        <p className="text-sm font-medium text-stone-700 mb-2">Focus Distribution</p>
+        <FocusDistributionChart sessions={sessions} focusOptions={focusOptions} />
+      </div>
+      
+      <div className="border-t border-stone-100 pt-5">
+        <p className="text-sm font-medium text-stone-700 mb-2">30-Day Activity</p>
+        <ActivityLineChart sessions={sessions} />
+      </div>
+    </div>
+  );
+}
+
 /*
 ================================================================================
 PRACTICE TRACKER MVP - ARCHITECTURE OVERVIEW
@@ -389,7 +836,7 @@ ROW LEVEL SECURITY (Supabase):
 
 FEATURE GATING:
 - Check profiles.is_pro before rendering Pro features
-- Pro features: drill selection, drill history, drill-linked goals
+- Pro features: drill selection, drill history, drill-linked goals, charts, export, multi-athlete
 - Free features: quick log, basic stats, one text goal per skill
 
 ================================================================================
@@ -447,6 +894,7 @@ function PracticeTrackerApp() {
   
   // Data state
   const [athlete, setAthlete] = useState(null);
+  const [athletes, setAthletes] = useState([]); // Pro: all athletes
   const [sessions, setSessions] = useState([]);
   const [goals, setGoals] = useState({});
   const [drillFrequency, setDrillFrequency] = useState([]);
@@ -462,6 +910,7 @@ function PracticeTrackerApp() {
   
   // Derived state
   const isPro = profile?.is_pro && (!profile?.pro_expires_at || new Date(profile.pro_expires_at) > new Date());
+  console.log('isPro check:', { is_pro: profile?.is_pro, expires: profile?.pro_expires_at, isPro });
 
   // ----------------------------------------------------------------------------
   // DATA FETCHING
@@ -477,34 +926,56 @@ function PracticeTrackerApp() {
     setError(null);
 
     try {
-      // Fetch athlete (get first non-archived athlete for this user)
-      const { data: athletes, error: athleteError } = await db.select('athletes', {
+      // Fetch athletes (Pro gets all, Free gets 1)
+      const { data: athleteData, error: athleteError } = await db.select('athletes', {
         is: { archived_at: 'null' },
-        limit: 1
+        limit: isPro ? 10 : 1
       });
 
       if (athleteError) throw athleteError;
 
-      if (!athletes || athletes.length === 0) {
-        // No athlete yet - show add athlete prompt
+      if (!athleteData || athleteData.length === 0) {
         setShowAddAthlete(true);
         setLoading(false);
         return;
       }
 
-      const currentAthlete = athletes[0];
+      setAthletes(athleteData);
+      
+      // Check localStorage for previously selected athlete
+      const savedAthleteId = localStorage.getItem('selectedAthleteId');
+      const savedAthlete = savedAthleteId 
+        ? athleteData.find(a => a.id === savedAthleteId) 
+        : null;
+      
+      // Use saved athlete if found, otherwise first athlete
+      const currentAthlete = savedAthlete || athleteData[0];
       setAthlete(currentAthlete);
+      
+      // Save selection to localStorage
+      localStorage.setItem('selectedAthleteId', currentAthlete.id);
 
+      // Load data for this athlete
+      await loadAthleteData(currentAthlete.id);
+
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  const loadAthleteData = async (athleteId) => {
+    try {
       // Fetch sessions (most recent first)
       const { data: sessionData, error: sessionError } = await db.select('sessions', {
-        eq: { athlete_id: currentAthlete.id },
+        eq: { athlete_id: athleteId },
         order: { column: 'date', ascending: false },
-        limit: 20
+        limit: 50 // More for Pro charts
       });
 
       if (sessionError) throw sessionError;
       
-      // Map to frontend format
       setSessions((sessionData || []).map(s => ({
         id: s.id,
         date: s.date,
@@ -516,12 +987,11 @@ function PracticeTrackerApp() {
 
       // Fetch active goals
       const { data: goalData, error: goalError } = await db.select('goals', {
-        eq: { athlete_id: currentAthlete.id, is_active: true }
+        eq: { athlete_id: athleteId, is_active: true }
       });
 
       if (goalError) throw goalError;
 
-      // Convert to { skill: { id, text, isActive } } format
       const goalsMap = {};
       FOCUS_OPTIONS.forEach(opt => { goalsMap[opt.id] = null; });
       (goalData || []).forEach(g => {
@@ -529,23 +999,30 @@ function PracticeTrackerApp() {
       });
       setGoals(goalsMap);
 
-      // Fetch drill frequency (Pro only, uses view)
+      // Fetch drill frequency (Pro only)
       if (isPro) {
         const { data: drillData } = await db.select('drill_frequency', {
-          eq: { athlete_id: currentAthlete.id },
+          eq: { athlete_id: athleteId },
           order: { column: 'times_used', ascending: false },
           limit: 10
         });
-        
         setDrillFrequency(drillData || []);
       }
 
     } catch (err) {
-      console.error('Error loading data:', err);
+      console.error('Error loading athlete data:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Switch athlete (Pro only)
+  const handleSelectAthlete = async (selectedAthlete) => {
+    setAthlete(selectedAthlete);
+    localStorage.setItem('selectedAthleteId', selectedAthlete.id);
+    setLoading(true);
+    await loadAthleteData(selectedAthlete.id);
   };
   
   // Quick log state
@@ -568,7 +1045,6 @@ function PracticeTrackerApp() {
   startOfWeek.setDate(today.getDate() - today.getDay());
   
   const weekSessions = sessions.filter(s => {
-    // Parse session date as local time
     const [year, month, day] = s.date.split('-').map(Number);
     const sessionDate = new Date(year, month - 1, day);
     return sessionDate >= startOfWeek;
@@ -578,7 +1054,7 @@ function PracticeTrackerApp() {
   const lastSession = sessions[0];
   
   const activeGoals = Object.entries(goals).filter(([_, g]) => g?.isActive);
-  const activeGoal = activeGoals[0]?.[1]; // For Free tier display
+  const activeGoal = activeGoals[0]?.[1];
 
   const handleQuickLog = async () => {
     if (logFocus.length === 0 || !athlete) return;
@@ -587,7 +1063,6 @@ function PracticeTrackerApp() {
     setError(null);
 
     try {
-      // Insert session
       const { data: newSession, error: sessionError } = await db.insert('sessions', {
         athlete_id: athlete.id,
         date: logDate,
@@ -599,7 +1074,6 @@ function PracticeTrackerApp() {
 
       if (sessionError) throw sessionError;
 
-      // Insert drills if Pro and drills selected
       if (isPro && logDrills.length > 0) {
         for (const drillId of logDrills) {
           const { error: drillError } = await db.insert('session_drills', {
@@ -611,7 +1085,6 @@ function PracticeTrackerApp() {
         }
       }
 
-      // Add to local state (optimistic update already done, this confirms)
       setSessions(prev => [{
         id: newSession.id,
         date: newSession.date,
@@ -621,7 +1094,6 @@ function PracticeTrackerApp() {
         reflection: newSession.reflection || ''
       }, ...prev]);
       
-      // Reset form
       setLogDate(new Date().toISOString().split('T')[0]);
       setLogDuration(30);
       setLogFocus([]);
@@ -660,7 +1132,6 @@ function PracticeTrackerApp() {
       const existingGoal = goals[skill];
       
       if (!editGoalText) {
-        // Delete goal if text is empty
         if (existingGoal?.id) {
           const { error } = await db.delete('goals', {
             eq: { id: existingGoal.id }
@@ -671,7 +1142,6 @@ function PracticeTrackerApp() {
         
         setGoals(prev => ({ ...prev, [skill]: null }));
       } else if (existingGoal?.id) {
-        // Update existing goal
         const { error } = await db.update('goals', { text: editGoalText }, {
           eq: { id: existingGoal.id }
         });
@@ -683,8 +1153,6 @@ function PracticeTrackerApp() {
           [skill]: { ...existingGoal, text: editGoalText }
         }));
       } else {
-        // Insert new goal
-        // For Free users, deactivate other goals first (enforced by DB trigger, but update UI)
         if (!isPro) {
           const otherActiveGoals = Object.entries(goals)
             .filter(([k, g]) => k !== skill && g?.isActive);
@@ -707,10 +1175,8 @@ function PracticeTrackerApp() {
         
         if (error) throw error;
         
-        // Update local state
         const updatedGoals = { ...goals };
         if (!isPro) {
-          // Clear other goals for Free users
           Object.keys(updatedGoals).forEach(k => {
             if (k !== skill && updatedGoals[k]) {
               updatedGoals[k] = { ...updatedGoals[k], isActive: false };
@@ -751,6 +1217,7 @@ function PracticeTrackerApp() {
 
       if (error) throw error;
 
+      setAthletes(prev => [...prev, newAthlete]);
       setAthlete(newAthlete);
       setShowAddAthlete(false);
       setNewAthleteName('');
@@ -764,17 +1231,16 @@ function PracticeTrackerApp() {
   };
 
   const formatDate = (dateStr) => {
-    // Parse date string as local time (not UTC)
     const [year, month, day] = dateStr.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
     
-    const yesterday = new Date(today);
+    const yesterday = new Date(todayDate);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    if (date.getTime() === today.getTime()) return 'Today';
+    if (date.getTime() === todayDate.getTime()) return 'Today';
     if (date.getTime() === yesterday.getTime()) return 'Yesterday';
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
@@ -805,49 +1271,51 @@ function PracticeTrackerApp() {
         
         .focus-chip {
           padding: 10px 16px;
-          border-radius: 20px;
-          border: 2px solid #e5e7eb;
-          background: white;
+          border-radius: 12px;
+          background: #f5f5f4;
+          border: 2px solid transparent;
+          font-size: 15px;
+          font-weight: 500;
           transition: all 0.15s;
         }
         
         .focus-chip.selected {
           border-color: #10b981;
           background: #ecfdf5;
+          color: #059669;
         }
         
-        .duration-btn {
-          padding: 12px 16px;
-          border-radius: 12px;
-          border: 2px solid #e5e7eb;
-          background: white;
+        .duration-chip {
+          padding: 10px 16px;
+          border-radius: 10px;
+          background: #f5f5f4;
+          border: 2px solid transparent;
+          font-size: 15px;
           font-weight: 500;
-          min-width: 60px;
           transition: all 0.15s;
         }
         
-        .duration-btn.selected {
+        .duration-chip.selected {
           border-color: #10b981;
-          background: #10b981;
-          color: white;
+          background: #ecfdf5;
+          color: #059669;
         }
         
         .pro-badge {
           background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
           color: white;
           font-size: 10px;
-          font-weight: 700;
-          padding: 2px 6px;
-          border-radius: 4px;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 20px;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
         }
         
         .drill-chip {
           padding: 8px 12px;
           border-radius: 8px;
-          border: 1.5px solid #e5e7eb;
-          background: white;
+          background: #fafaf9;
+          border: 1.5px solid #e7e5e4;
           font-size: 14px;
           transition: all 0.15s;
         }
@@ -925,9 +1393,13 @@ function PracticeTrackerApp() {
           <header className="bg-white border-b border-stone-100 px-4 py-4 sticky top-0 z-40">
             <div className="max-w-lg mx-auto flex items-center justify-between">
               <div>
-                <h1 className="text-lg font-semibold text-stone-900">
-                  {athlete.name}'s Practice
-                </h1>
+                <AthleteSelector
+                  athletes={athletes}
+                  currentAthlete={athlete}
+                  onSelectAthlete={handleSelectAthlete}
+                  onAddAthlete={() => setShowAddAthlete(true)}
+                  isPro={isPro}
+                />
                 <p className="text-sm text-stone-500">
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </p>
@@ -971,7 +1443,8 @@ function PracticeTrackerApp() {
         {/* Tagline */}
         <div className="text-center pb-2">
           <p className="text-sm text-stone-500 leading-relaxed">
-            Turn "I think we practiced" into something you can actually see. Track consistency and focus without overthinking it.
+            Turn "I think we practiced" into something you can actually see.<br />
+            Track consistency and focus without overthinking it.
           </p>
         </div>
 
@@ -979,7 +1452,7 @@ function PracticeTrackerApp() {
         <div className="card p-5">
           <div className="mb-3">
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Weekly Practice Total</p>
-            <p className="text-xs text-stone-400 mt-0.5">Total practice summary logged for this week.</p>
+            <p className="text-xs text-stone-400 mt-0.5">Total practice time logged for this week.</p>
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
@@ -995,11 +1468,19 @@ function PracticeTrackerApp() {
                 {practicesThisWeek >= 4 ? '🏆' : practicesThisWeek >= 3 ? '🔥' : practicesThisWeek >= 1 ? '👍' : '—'}
               </p>
               <p className="text-xs text-stone-500 mt-1">
-                {practicesThisWeek >= 4 ? 'All-Star!' : practicesThisWeek >= 3 ? 'On fire!' : practicesThisWeek >= 1 ? 'Good start' : 'let\'s go!'}
+                {practicesThisWeek >= 4 ? 'All-Star!' : practicesThisWeek >= 3 ? 'On fire!' : practicesThisWeek >= 1 ? 'Good start' : "let's go!"}
               </p>
             </div>
           </div>
         </div>
+
+        {/* Pro Charts Section */}
+        <ProChartsCard 
+          sessions={sessions} 
+          focusOptions={FOCUS_OPTIONS} 
+          athlete={athlete}
+          isPro={isPro} 
+        />
 
         {/* Last Practice */}
         {lastSession && (
@@ -1007,7 +1488,7 @@ function PracticeTrackerApp() {
             <div className="flex items-start justify-between mb-1">
               <div>
                 <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Last Practice Focus Areas</p>
-                <p className="text-xs text-stone-400 mt-0.5">What you worked on most recently.</p>
+                <p className="text-xs text-stone-400 mt-0.5">What was worked on most recently.</p>
               </div>
               <div className="flex items-center gap-1 text-stone-500">
                 <Clock className="w-4 h-4" />
@@ -1055,7 +1536,6 @@ function PracticeTrackerApp() {
           <p className="text-xs text-stone-400 mb-3">The main focus or objective you're working toward this week.</p>
           
           {isPro ? (
-            // Pro: Show up to 3 goals
             activeGoals.length > 0 ? (
               <div className="space-y-3">
                 {activeGoals.slice(0, 3).map(([skill, goal]) => (
@@ -1076,10 +1556,10 @@ function PracticeTrackerApp() {
                       setShowGoalEdit(unusedSkill);
                       setEditGoalText('');
                     }}
-                    className="flex items-center gap-2 text-sm text-emerald-600 font-medium"
+                    className="text-sm text-emerald-600 font-medium flex items-center gap-1"
                   >
                     <Plus className="w-4 h-4" />
-                    Add another goal ({3 - activeGoals.length} remaining)
+                    Add another goal
                   </button>
                 )}
               </div>
@@ -1087,7 +1567,6 @@ function PracticeTrackerApp() {
               <p className="text-stone-400 italic">Tap "Add" to set up to 3 goals</p>
             )
           ) : (
-            // Free: Show single goal
             activeGoal ? (
               <p className="text-stone-900">{activeGoal.text}</p>
             ) : (
@@ -1100,7 +1579,7 @@ function PracticeTrackerApp() {
         <div className="card overflow-hidden">
           <div className="p-4 border-b border-stone-100">
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Recent Practices</p>
-            <p className="text-xs text-stone-400 mt-0.5">A log of your recent practices with focus and time spent.</p>
+            <p className="text-xs text-stone-400 mt-0.5">A log of recent practices with focus and time spent.</p>
           </div>
           <div className="divide-y divide-stone-50">
             {sessions.slice(0, showMorePractices ? 15 : 5).map(session => (
@@ -1141,7 +1620,7 @@ function PracticeTrackerApp() {
             </div>
             <div className="flex-1">
               <p className="font-medium text-stone-900">Upgrade to Pro</p>
-              <p className="text-sm text-stone-500">Track specific drills & see trends</p>
+              <p className="text-sm text-stone-500">Charts, trends & multi-athlete support</p>
             </div>
             <ChevronRight className="w-5 h-5 text-stone-400" />
           </button>
@@ -1158,7 +1637,6 @@ function PracticeTrackerApp() {
               {drillFrequency.slice(0, 5).map(drill => {
                 const maxCount = drillFrequency[0]?.times_used || 1;
                 const pct = Math.round((drill.times_used / maxCount) * 100);
-                // Look up drill name from catalog
                 const drillInfo = Object.values(DRILL_CATALOG)
                   .flat()
                   .find(d => d.id === drill.drill_id);
@@ -1197,8 +1675,8 @@ function PracticeTrackerApp() {
 
       {/* Quick Log Modal */}
       {showQuickLog && (
-        <div className="fixed inset-0 bg-black/40 z-50 modal-overlay flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto modal-content">
+        <div className="fixed inset-0 bg-black/40 z-50 modal-overlay flex items-end sm:items-center justify-center">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-auto modal-content">
             <div className="sticky top-0 bg-white px-5 py-4 border-b border-stone-100 flex items-center justify-between z-10">
               <h2 className="text-lg font-semibold text-stone-900">Log Practice</h2>
               <button 
@@ -1209,7 +1687,7 @@ function PracticeTrackerApp() {
               </button>
             </div>
 
-            <div className="p-5 space-y-6">
+            <div className="p-5 space-y-5">
               {/* Date */}
               <div>
                 <label className="block text-sm font-medium text-stone-700 mb-2">Date</label>
@@ -1223,15 +1701,15 @@ function PracticeTrackerApp() {
 
               {/* Duration */}
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">Duration (minutes)</label>
-                <div className="flex gap-2 flex-wrap">
-                  {DURATION_PRESETS.map(d => (
+                <label className="block text-sm font-medium text-stone-700 mb-2">Duration</label>
+                <div className="flex flex-wrap gap-2">
+                  {DURATION_PRESETS.map(mins => (
                     <button
-                      key={d}
-                      onClick={() => setLogDuration(d)}
-                      className={`duration-btn ${logDuration === d ? 'selected' : ''}`}
+                      key={mins}
+                      onClick={() => setLogDuration(mins)}
+                      className={`duration-chip ${logDuration === mins ? 'selected' : ''}`}
                     >
-                      {d}
+                      {mins} min
                     </button>
                   ))}
                 </div>
@@ -1239,26 +1717,24 @@ function PracticeTrackerApp() {
 
               {/* Focus Areas */}
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">What did you work on?</label>
+                <label className="block text-sm font-medium text-stone-700 mb-2">Focus Areas</label>
                 <div className="flex flex-wrap gap-2">
                   {FOCUS_OPTIONS.map(opt => (
                     <button
                       key={opt.id}
                       onClick={() => toggleFocus(opt.id)}
-                      className={`focus-chip flex items-center gap-2 ${logFocus.includes(opt.id) ? 'selected' : ''}`}
+                      className={`focus-chip ${logFocus.includes(opt.id) ? 'selected' : ''}`}
                     >
-                      <span>{opt.emoji}</span>
-                      <span className="font-medium">{opt.label}</span>
-                      {logFocus.includes(opt.id) && <Check className="w-4 h-4 text-emerald-600" />}
+                      {opt.emoji} {opt.label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Pro: Drill Selection */}
+              {/* Drills (PRO only) */}
               {isPro && logFocus.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="bg-violet-50/50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
                     <label className="text-sm font-medium text-stone-700">Specific Drills</label>
                     <span className="pro-badge">Pro</span>
                   </div>
@@ -1410,15 +1886,16 @@ function PracticeTrackerApp() {
               </div>
               <h2 className="text-2xl font-bold text-stone-900 mb-2">Upgrade to Pro</h2>
               <p className="text-stone-600 mb-6">
-                Get deeper insights into your practice with drill tracking and progress trends.
+                Get deeper insights into your practice with charts, trends, and more.
               </p>
 
               <div className="bg-stone-50 rounded-2xl p-5 mb-6 text-left space-y-3">
                 {[
-                  'Track specific drills in each session',
-                  'See which drills you practice most',
+                  'Visual charts & progress trends',
+                  'Track multiple athletes',
+                  'Export practice data (CSV/JSON)',
                   'Set up to 3 goals at once',
-                  'Link goals to specific drills',
+                  'Track specific drills',
                 ].map((feature, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center">
@@ -1434,9 +1911,9 @@ function PracticeTrackerApp() {
 
               <button
                 onClick={() => {
-                                  // In production: redirect to Stripe hosted checkout
+                  // In production: redirect to Stripe hosted checkout
                   // window.location.href = '/api/checkout';
-                  refreshProfile(); // Re-fetch profile after upgrade
+                  refreshProfile();
                   setShowProUpsell(false);
                 }}
                 className="btn-primary w-full mb-3"
