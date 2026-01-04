@@ -291,40 +291,40 @@ function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 w-full max-w-sm p-6">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      <div className="bg-slate-800 rounded-2xl shadow-lg border border-slate-700 w-full max-w-sm p-6">
         <div className="text-center mb-6">
-          <h1 className="text-xl font-bold text-stone-900">Practice Tracker</h1>
-          <p className="text-sm text-stone-500 mt-1">
+          <h1 className="text-xl font-bold text-slate-100">Practice Tracker</h1>
+          <p className="text-sm text-slate-400 mt-1">
             {mode === 'signin' ? 'Sign in to continue' : 'Create your account'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-slate-600 bg-slate-700 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-slate-100"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-slate-600 bg-slate-700 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-slate-100"
             />
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">
+            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-900/30 px-3 py-2 rounded-lg border border-red-800/50">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -333,18 +333,18 @@ function AuthScreen() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 font-semibold hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {mode === 'signin' ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-stone-500 mt-4">
+        <p className="text-center text-sm text-slate-400 mt-4">
           {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}
           <button
             onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-            className="text-emerald-600 font-medium"
+            className="text-amber-400 font-medium"
           >
             {mode === 'signin' ? 'Sign up' : 'Sign in'}
           </button>
@@ -360,10 +360,10 @@ function AuthScreen() {
 
 // Chart colors
 const CHART_COLORS = {
-  hitting: '#10b981',    // emerald
-  pitching: '#6366f1',   // indigo
-  fielding: '#f59e0b',   // amber
-  conditioning: '#ef4444' // red
+  hitting: '#d4a418',    // gold
+  pitching: '#60a5fa',   // blue
+  fielding: '#34d399',   // green
+  conditioning: '#f472b6' // pink
 };
 
 // Athlete Selector (Pro only - always shows for Pro users)
@@ -373,7 +373,7 @@ function AthleteSelector({ athletes, currentAthlete, onSelectAthlete, onAddAthle
   // Free users only see current athlete name (no selector)
   if (!isPro) {
     return (
-      <h1 className="text-lg font-semibold text-stone-900">
+      <h1 className="text-lg font-semibold text-slate-100">
         {currentAthlete?.name}'s Practice
       </h1>
     );
@@ -384,20 +384,20 @@ function AthleteSelector({ athletes, currentAthlete, onSelectAthlete, onAddAthle
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 hover:bg-stone-100 rounded-lg px-2 py-1 -ml-2 transition"
+        className="flex items-center gap-2 hover:bg-slate-700 rounded-lg px-2 py-1 -ml-2 transition"
       >
-        <h1 className="text-lg font-semibold text-stone-900">
+        <h1 className="text-lg font-semibold text-slate-100">
           {currentAthlete?.name}'s Practice
         </h1>
-        <ChevronDown className={`w-4 h-4 text-stone-400 transition ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-slate-400 transition ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-xl shadow-lg border border-stone-200 py-1 z-50">
-            <div className="px-3 py-2 border-b border-stone-100">
-              <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Switch Athlete</p>
+          <div className="absolute top-full left-0 mt-1 w-56 bg-slate-800 rounded-xl shadow-lg border border-slate-700 py-1 z-50">
+            <div className="px-3 py-2 border-b border-slate-700">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Switch Athlete</p>
             </div>
             
             {athletes.map(athlete => (
@@ -407,35 +407,35 @@ function AthleteSelector({ athletes, currentAthlete, onSelectAthlete, onAddAthle
                   onSelectAthlete(athlete);
                   setIsOpen(false);
                 }}
-                className={`w-full px-4 py-2.5 text-left hover:bg-stone-50 flex items-center gap-3 ${
-                  athlete.id === currentAthlete?.id ? 'bg-emerald-50' : ''
+                className={`w-full px-4 py-2.5 text-left hover:bg-slate-700 flex items-center gap-3 ${
+                  athlete.id === currentAthlete?.id ? 'bg-amber-500/10' : ''
                 }`}
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  athlete.id === currentAthlete?.id ? 'bg-emerald-100' : 'bg-stone-100'
+                  athlete.id === currentAthlete?.id ? 'bg-amber-500/20' : 'bg-slate-700'
                 }`}>
                   <User className={`w-4 h-4 ${
-                    athlete.id === currentAthlete?.id ? 'text-emerald-600' : 'text-stone-500'
+                    athlete.id === currentAthlete?.id ? 'text-amber-400' : 'text-slate-400'
                   }`} />
                 </div>
                 <span className={`font-medium ${
-                  athlete.id === currentAthlete?.id ? 'text-emerald-700' : 'text-stone-700'
+                  athlete.id === currentAthlete?.id ? 'text-amber-400' : 'text-slate-300'
                 }`}>
                   {athlete.name}
                 </span>
               </button>
             ))}
             
-            <div className="border-t border-stone-100 mt-1 pt-1">
+            <div className="border-t border-slate-700 mt-1 pt-1">
               <button
                 onClick={() => {
                   onAddAthlete();
                   setIsOpen(false);
                 }}
-                className="w-full px-4 py-2.5 text-left text-emerald-600 hover:bg-stone-50 flex items-center gap-3"
+                className="w-full px-4 py-2.5 text-left text-amber-400 hover:bg-slate-700 flex items-center gap-3"
               >
-                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
-                  <Plus className="w-4 h-4 text-emerald-600" />
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <Plus className="w-4 h-4 text-amber-400" />
                 </div>
                 <span className="font-medium">Add Athlete</span>
               </button>
@@ -491,12 +491,12 @@ function WeeklyMinutesChart({ sessions }) {
         <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
           <XAxis 
             dataKey="label" 
-            tick={{ fontSize: 11, fill: '#78716c' }}
-            axisLine={{ stroke: '#e7e5e4' }}
+            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            axisLine={{ stroke: '#334155' }}
             tickLine={false}
           />
           <YAxis 
-            tick={{ fontSize: 11, fill: '#78716c' }}
+            tick={{ fontSize: 11, fill: '#94a3b8' }}
             axisLine={false}
             tickLine={false}
             width={35}
@@ -504,13 +504,14 @@ function WeeklyMinutesChart({ sessions }) {
           <Tooltip 
             formatter={(value) => [`${value} min`, 'Duration']}
             contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #e7e5e4',
+              backgroundColor: '#1e293b',
+              border: '1px solid #334155',
               borderRadius: '8px',
-              fontSize: '13px'
+              fontSize: '13px',
+              color: '#e2e8f0'
             }}
           />
-          <Bar dataKey="minutes" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+          <Bar dataKey="minutes" fill="#d4a418" radius={[4, 4, 0, 0]} maxBarSize={40} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -540,7 +541,7 @@ function FocusDistributionChart({ sessions, focusOptions }) {
   }, [sessions, focusOptions]);
 
   if (focusData.length === 0) {
-    return <p className="text-stone-400 text-sm italic text-center py-4">No practice data yet</p>;
+    return <p className="text-slate-500 text-sm italic text-center py-4">No practice data yet</p>;
   }
 
   const total = focusData.reduce((sum, d) => sum + d.value, 0);
@@ -567,10 +568,11 @@ function FocusDistributionChart({ sessions, focusOptions }) {
             <Tooltip 
               formatter={(value, name) => [`${value} sessions`, name]}
               contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e7e5e4',
+                backgroundColor: '#1e293b',
+                border: '1px solid #334155',
                 borderRadius: '8px',
-                fontSize: '13px'
+                fontSize: '13px',
+                color: '#e2e8f0'
               }}
             />
           </PieChart>
@@ -584,8 +586,8 @@ function FocusDistributionChart({ sessions, focusOptions }) {
               className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
               style={{ backgroundColor: item.color }}
             />
-            <span className="text-xs text-stone-600 flex-1">{item.emoji} {item.name}</span>
-            <span className="text-xs font-medium text-stone-900">
+            <span className="text-xs text-slate-400 flex-1">{item.emoji} {item.name}</span>
+            <span className="text-xs font-medium text-slate-200">
               {Math.round((item.value / total) * 100)}%
             </span>
           </div>
@@ -627,8 +629,8 @@ function ActivityLineChart({ sessions }) {
         <LineChart data={activityData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
           <XAxis 
             dataKey="day" 
-            tick={{ fontSize: 10, fill: '#a8a29e' }}
-            axisLine={{ stroke: '#e7e5e4' }}
+            tick={{ fontSize: 10, fill: '#64748b' }}
+            axisLine={{ stroke: '#334155' }}
             tickLine={false}
             interval={6}
           />
@@ -643,19 +645,20 @@ function ActivityLineChart({ sessions }) {
               return label;
             }}
             contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #e7e5e4',
+              backgroundColor: '#1e293b',
+              border: '1px solid #334155',
               borderRadius: '8px',
-              fontSize: '13px'
+              fontSize: '13px',
+              color: '#e2e8f0'
             }}
           />
           <Line 
             type="monotone" 
             dataKey="minutes" 
-            stroke="#10b981" 
+            stroke="#d4a418" 
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: '#10b981' }}
+            activeDot={{ r: 4, fill: '#d4a418' }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -713,7 +716,7 @@ function ExportButton({ sessions, athlete, isPro }) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition"
       >
         <Download className="w-3.5 h-3.5" />
         Export
@@ -722,14 +725,14 @@ function ExportButton({ sessions, athlete, isPro }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full right-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-stone-200 py-1 z-50">
-            <button onClick={exportCSV} className="w-full px-3 py-2 text-left text-sm hover:bg-stone-50 flex items-center gap-2">
-              <Table className="w-4 h-4 text-stone-400" />
-              <span className="text-stone-700">CSV Spreadsheet</span>
+          <div className="absolute top-full right-0 mt-1 w-44 bg-slate-800 rounded-xl shadow-lg border border-slate-700 py-1 z-50">
+            <button onClick={exportCSV} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2">
+              <Table className="w-4 h-4 text-slate-500" />
+              <span className="text-slate-300">CSV Spreadsheet</span>
             </button>
-            <button onClick={exportJSON} className="w-full px-3 py-2 text-left text-sm hover:bg-stone-50 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-stone-400" />
-              <span className="text-stone-700">JSON Data</span>
+            <button onClick={exportJSON} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-slate-500" />
+              <span className="text-slate-300">JSON Data</span>
             </button>
           </div>
         </>
@@ -746,11 +749,11 @@ function ProChartsCard({ sessions, focusOptions, athlete, isPro }) {
     return (
       <div className="card p-5">
         <div className="flex items-center gap-2 mb-4">
-          <BarChart3 className="w-4 h-4 text-violet-500" />
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Practice Trends</p>
-          <span className="px-2 py-0.5 text-xs font-medium bg-violet-100 text-violet-700 rounded-full">Pro</span>
+          <BarChart3 className="w-4 h-4 text-amber-400" />
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Practice Trends</p>
+          <span className="pro-badge">Pro</span>
         </div>
-        <p className="text-stone-400 text-sm italic text-center py-6">
+        <p className="text-slate-500 text-sm italic text-center py-6">
           Log some practices to see your trends!
         </p>
       </div>
@@ -761,25 +764,25 @@ function ProChartsCard({ sessions, focusOptions, athlete, isPro }) {
     <div className="card p-5 space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-violet-500" />
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Practice Trends</p>
-          <span className="px-2 py-0.5 text-xs font-medium bg-violet-100 text-violet-700 rounded-full">Pro</span>
+          <BarChart3 className="w-4 h-4 text-amber-400" />
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Practice Trends</p>
+          <span className="pro-badge">Pro</span>
         </div>
         <ExportButton sessions={sessions} athlete={athlete} isPro={isPro} />
       </div>
       
       <div>
-        <p className="text-sm font-medium text-stone-700 mb-2">Weekly Progress</p>
+        <p className="text-sm font-medium text-slate-300 mb-2">Weekly Progress</p>
         <WeeklyMinutesChart sessions={sessions} />
       </div>
       
-      <div className="border-t border-stone-100 pt-5">
-        <p className="text-sm font-medium text-stone-700 mb-2">Focus Distribution</p>
+      <div className="border-t border-slate-700 pt-5">
+        <p className="text-sm font-medium text-slate-300 mb-2">Focus Distribution</p>
         <FocusDistributionChart sessions={sessions} focusOptions={focusOptions} />
       </div>
       
-      <div className="border-t border-stone-100 pt-5">
-        <p className="text-sm font-medium text-stone-700 mb-2">30-Day Activity</p>
+      <div className="border-t border-slate-700 pt-5">
+        <p className="text-sm font-medium text-slate-300 mb-2">30-Day Activity</p>
         <ActivityLineChart sessions={sessions} />
       </div>
     </div>
@@ -1246,19 +1249,20 @@ function PracticeTrackerApp() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50" style={{ fontFamily: "'SF Pro Display', -apple-system, sans-serif" }}>
+    <div className="min-h-screen bg-slate-900" style={{ fontFamily: "'SF Pro Display', -apple-system, sans-serif" }}>
       <style>{`
         * { -webkit-tap-highlight-color: transparent; }
         
         .card {
-          background: white;
+          background: #1e293b;
           border-radius: 16px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+          border: 1px solid rgba(255,255,255,0.05);
         }
         
         .btn-primary {
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-          color: white;
+          background: linear-gradient(135deg, #d4a418 0%, #b8860b 100%);
+          color: #1e293b;
           font-weight: 600;
           border-radius: 12px;
           padding: 14px 24px;
@@ -1272,38 +1276,40 @@ function PracticeTrackerApp() {
         .focus-chip {
           padding: 10px 16px;
           border-radius: 12px;
-          background: #f5f5f4;
+          background: #334155;
           border: 2px solid transparent;
           font-size: 15px;
           font-weight: 500;
           transition: all 0.15s;
+          color: #cbd5e1;
         }
         
         .focus-chip.selected {
-          border-color: #10b981;
-          background: #ecfdf5;
-          color: #059669;
+          border-color: #d4a418;
+          background: rgba(212, 164, 24, 0.15);
+          color: #d4a418;
         }
         
         .duration-chip {
           padding: 10px 16px;
           border-radius: 10px;
-          background: #f5f5f4;
+          background: #334155;
           border: 2px solid transparent;
           font-size: 15px;
           font-weight: 500;
           transition: all 0.15s;
+          color: #cbd5e1;
         }
         
         .duration-chip.selected {
-          border-color: #10b981;
-          background: #ecfdf5;
-          color: #059669;
+          border-color: #d4a418;
+          background: rgba(212, 164, 24, 0.15);
+          color: #d4a418;
         }
         
         .pro-badge {
-          background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-          color: white;
+          background: linear-gradient(135deg, #d4a418 0%, #b8860b 100%);
+          color: #1e293b;
           font-size: 10px;
           font-weight: 600;
           padding: 2px 8px;
@@ -1314,15 +1320,17 @@ function PracticeTrackerApp() {
         .drill-chip {
           padding: 8px 12px;
           border-radius: 8px;
-          background: #fafaf9;
-          border: 1.5px solid #e7e5e4;
+          background: #334155;
+          border: 1.5px solid #475569;
           font-size: 14px;
           transition: all 0.15s;
+          color: #cbd5e1;
         }
         
         .drill-chip.selected {
-          border-color: #8b5cf6;
-          background: #f5f3ff;
+          border-color: #d4a418;
+          background: rgba(212, 164, 24, 0.15);
+          color: #d4a418;
         }
         
         .modal-overlay {
@@ -1390,7 +1398,7 @@ function PracticeTrackerApp() {
       {!loading && athlete && (
         <>
           {/* Header */}
-          <header className="bg-white border-b border-stone-100 px-4 py-4 sticky top-0 z-40">
+          <header className="bg-slate-800 border-b border-slate-700 px-4 py-4 sticky top-0 z-40">
             <div className="max-w-lg mx-auto flex items-center justify-between">
               <div>
                 <AthleteSelector
@@ -1400,7 +1408,7 @@ function PracticeTrackerApp() {
                   onAddAthlete={() => setShowAddAthlete(true)}
                   isPro={isPro}
                 />
-                <p className="text-sm text-stone-500">
+                <p className="text-sm text-slate-400">
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </p>
               </div>
@@ -1408,15 +1416,15 @@ function PracticeTrackerApp() {
                 <span
                   className={`px-3 py-1.5 rounded-full text-sm font-medium ${
                     isPro 
-                      ? 'bg-violet-100 text-violet-700' 
-                      : 'bg-stone-100 text-stone-600'
+                      ? 'bg-amber-500/20 text-amber-400' 
+                      : 'bg-slate-700 text-slate-400'
                   }`}
                 >
                   {isPro ? '✨ Pro' : 'Free'}
                 </span>
                 <button
                   onClick={signOut}
-                  className="p-2 rounded-full hover:bg-stone-100 text-stone-400"
+                  className="p-2 rounded-full hover:bg-slate-700 text-slate-400"
                   title="Sign out"
                 >
                   <LogOut className="w-4 h-4" />
@@ -1428,7 +1436,7 @@ function PracticeTrackerApp() {
           {/* Error Banner */}
           {error && (
             <div className="max-w-lg mx-auto px-4 pt-4">
-              <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 px-4 py-3 rounded-xl">
+              <div className="flex items-center gap-2 text-red-400 text-sm bg-red-900/30 px-4 py-3 rounded-xl border border-red-800/50">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {error}
                 <button onClick={() => setError(null)} className="ml-auto">
@@ -1442,7 +1450,7 @@ function PracticeTrackerApp() {
         
         {/* Tagline */}
         <div className="text-center pb-2">
-          <p className="text-sm text-stone-500 leading-relaxed">
+          <p className="text-sm text-slate-400 leading-relaxed">
             Turn "I think we practiced" into something you can actually see.<br />
             Track consistency and focus without overthinking it.
           </p>
@@ -1451,23 +1459,23 @@ function PracticeTrackerApp() {
         {/* Quick Stats */}
         <div className="card p-5">
           <div className="mb-3">
-            <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Weekly Practice Total</p>
-            <p className="text-xs text-stone-400 mt-0.5">Total practice time logged for this week.</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Weekly Practice Total</p>
+            <p className="text-xs text-slate-500 mt-0.5">Total practice time logged for this week.</p>
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-3xl font-bold text-stone-900">{practicesThisWeek}</p>
-              <p className="text-xs text-stone-500 mt-1">this week</p>
+              <p className="text-3xl font-bold text-white">{practicesThisWeek}</p>
+              <p className="text-xs text-slate-400 mt-1">this week</p>
             </div>
-            <div className="border-l border-r border-stone-100">
-              <p className="text-3xl font-bold text-stone-900">{minutesThisWeek}</p>
-              <p className="text-xs text-stone-500 mt-1">minutes</p>
+            <div className="border-l border-r border-slate-700">
+              <p className="text-3xl font-bold text-white">{minutesThisWeek}</p>
+              <p className="text-xs text-slate-400 mt-1">minutes</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-emerald-600">
+              <p className="text-3xl font-bold text-amber-400">
                 {practicesThisWeek >= 4 ? '🏆' : practicesThisWeek >= 3 ? '🔥' : practicesThisWeek >= 1 ? '👍' : '—'}
               </p>
-              <p className="text-xs text-stone-500 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 {practicesThisWeek >= 4 ? 'All-Star!' : practicesThisWeek >= 3 ? 'On fire!' : practicesThisWeek >= 1 ? 'Good start' : "let's go!"}
               </p>
             </div>
@@ -1487,27 +1495,27 @@ function PracticeTrackerApp() {
           <div className="card p-5">
             <div className="flex items-start justify-between mb-1">
               <div>
-                <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Last Practice Focus Areas</p>
-                <p className="text-xs text-stone-400 mt-0.5">What was worked on most recently.</p>
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Last Practice Focus Areas</p>
+                <p className="text-xs text-slate-500 mt-0.5">What did you do last time?</p>
               </div>
-              <div className="flex items-center gap-1 text-stone-500">
+              <div className="flex items-center gap-1 text-slate-400">
                 <Clock className="w-4 h-4" />
                 <span className="text-sm font-medium">{lastSession.duration} min</span>
               </div>
             </div>
-            <p className="text-sm text-stone-600 mb-3">{formatDate(lastSession.date)}</p>
+            <p className="text-sm text-slate-400 mb-3">{formatDate(lastSession.date)}</p>
             <div className="flex flex-wrap gap-2 mb-2">
               {lastSession.focus.map(f => {
                 const opt = FOCUS_OPTIONS.find(o => o.id === f);
                 return (
-                  <span key={f} className="text-sm bg-stone-100 px-2.5 py-1 rounded-full">
+                  <span key={f} className="text-sm bg-slate-700 text-slate-300 px-2.5 py-1 rounded-full">
                     {opt?.emoji} {opt?.label}
                   </span>
                 );
               })}
             </div>
             {lastSession.note && (
-              <p className="text-sm text-stone-600 italic mt-3">"{lastSession.note}"</p>
+              <p className="text-sm text-slate-400 italic mt-3">"{lastSession.note}"</p>
             )}
           </div>
         )}
@@ -1516,8 +1524,8 @@ function PracticeTrackerApp() {
         <div className="card p-5">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-emerald-600" />
-              <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">
+              <Target className="w-4 h-4 text-amber-400" />
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
                 Weekly Goal
               </p>
               {isPro && <span className="pro-badge">Up to 3</span>}
@@ -1528,12 +1536,12 @@ function PracticeTrackerApp() {
                 setShowGoalEdit(skill);
                 setEditGoalText(goals[skill]?.text || '');
               }}
-              className="text-xs text-emerald-600 font-medium"
+              className="text-xs text-amber-400 font-medium"
             >
               {activeGoals.length > 0 ? 'Edit' : 'Add'}
             </button>
           </div>
-          <p className="text-xs text-stone-400 mb-3">The main focus or objective you're working toward this week.</p>
+          <p className="text-xs text-slate-500 mb-3">The main focus or objective you're working toward this week.</p>
           
           {isPro ? (
             activeGoals.length > 0 ? (
@@ -1544,8 +1552,8 @@ function PracticeTrackerApp() {
                       {FOCUS_OPTIONS.find(f => f.id === skill)?.emoji}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-stone-400 capitalize">{skill}</p>
-                      <p className="text-stone-900">{goal.text}</p>
+                      <p className="text-xs text-slate-500 capitalize">{skill}</p>
+                      <p className="text-slate-200">{goal.text}</p>
                     </div>
                   </div>
                 ))}
@@ -1556,7 +1564,7 @@ function PracticeTrackerApp() {
                       setShowGoalEdit(unusedSkill);
                       setEditGoalText('');
                     }}
-                    className="text-sm text-emerald-600 font-medium flex items-center gap-1"
+                    className="text-sm text-amber-400 font-medium flex items-center gap-1"
                   >
                     <Plus className="w-4 h-4" />
                     Add another goal
@@ -1564,37 +1572,37 @@ function PracticeTrackerApp() {
                 )}
               </div>
             ) : (
-              <p className="text-stone-400 italic">Tap "Add" to set up to 3 goals</p>
+              <p className="text-slate-500 italic">Tap "Add" to set up to 3 goals</p>
             )
           ) : (
             activeGoal ? (
-              <p className="text-stone-900">{activeGoal.text}</p>
+              <p className="text-slate-200">{activeGoal.text}</p>
             ) : (
-              <p className="text-stone-400 italic">Tap "Add" to set a goal</p>
+              <p className="text-slate-500 italic">Tap "Add" to set a goal</p>
             )
           )}
         </div>
 
         {/* Recent History */}
         <div className="card overflow-hidden">
-          <div className="p-4 border-b border-stone-100">
-            <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Recent Practices</p>
-            <p className="text-xs text-stone-400 mt-0.5">A log of recent practices with focus and time spent.</p>
+          <div className="p-4 border-b border-slate-700">
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Recent Practices</p>
+            <p className="text-xs text-slate-500 mt-0.5">What have you focused on recently?</p>
           </div>
-          <div className="divide-y divide-stone-50">
+          <div className="divide-y divide-slate-700/50">
             {sessions.slice(0, showMorePractices ? 15 : 5).map(session => (
               <div key={session.id} className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-lg">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-lg">
                   {FOCUS_OPTIONS.find(f => f.id === session.focus[0])?.emoji || '🥎'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-stone-900">{formatDate(session.date)}</p>
-                  <p className="text-xs text-stone-500 truncate">
+                  <p className="text-sm font-medium text-slate-200">{formatDate(session.date)}</p>
+                  <p className="text-xs text-slate-400 truncate">
                     {session.focus.map(f => FOCUS_OPTIONS.find(o => o.id === f)?.label).join(', ')}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-stone-700">{session.duration}m</p>
+                  <p className="text-sm font-medium text-slate-300">{session.duration}m</p>
                 </div>
               </div>
             ))}
@@ -1602,7 +1610,7 @@ function PracticeTrackerApp() {
           {sessions.length > 5 && (
             <button
               onClick={() => setShowMorePractices(!showMorePractices)}
-              className="w-full p-3 text-sm text-emerald-600 font-medium hover:bg-stone-50 border-t border-stone-100"
+              className="w-full p-3 text-sm text-amber-400 font-medium hover:bg-slate-700/50 border-t border-slate-700"
             >
               {showMorePractices ? 'Show Less' : `Show More (${Math.min(sessions.length, 15) - 5} more)`}
             </button>
@@ -1613,16 +1621,16 @@ function PracticeTrackerApp() {
         {!isPro && (
           <button 
             onClick={() => setShowProUpsell(true)}
-            className="card p-4 w-full text-left flex items-center gap-4 hover:bg-stone-50 transition"
+            className="card p-4 w-full text-left flex items-center gap-4 hover:bg-slate-700/50 transition"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-slate-900" />
             </div>
             <div className="flex-1">
-              <p className="font-medium text-stone-900">Upgrade to Pro</p>
-              <p className="text-sm text-stone-500">Charts, trends & multi-athlete support</p>
+              <p className="font-medium text-slate-200">Upgrade to Pro</p>
+              <p className="text-sm text-slate-400">Charts, trends & multi-athlete support</p>
             </div>
-            <ChevronRight className="w-5 h-5 text-stone-400" />
+            <ChevronRight className="w-5 h-5 text-slate-500" />
           </button>
         )}
 
@@ -1630,7 +1638,7 @@ function PracticeTrackerApp() {
         {isPro && drillFrequency.length > 0 && (
           <div className="card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Drill Focus This Month</p>
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Drill Focus This Month</p>
               <span className="pro-badge">Pro</span>
             </div>
             <div className="space-y-3">
@@ -1643,12 +1651,12 @@ function PracticeTrackerApp() {
                 return (
                   <div key={drill.drill_id}>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-stone-700">{drillInfo?.name || drill.drill_id}</span>
-                      <span className="text-stone-500">{drill.times_used}×</span>
+                      <span className="text-slate-300">{drillInfo?.name || drill.drill_id}</span>
+                      <span className="text-slate-500">{drill.times_used}×</span>
                     </div>
-                    <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full"
+                        className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -1661,11 +1669,11 @@ function PracticeTrackerApp() {
       </main>
 
       {/* Floating Log Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-stone-50 via-stone-50 to-transparent pointer-events-none">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent pointer-events-none">
         <div className="max-w-lg mx-auto pointer-events-auto">
           <button
             onClick={() => setShowQuickLog(true)}
-            className="btn-primary w-full flex items-center justify-center gap-2 text-lg shadow-lg shadow-emerald-200"
+            className="btn-primary w-full flex items-center justify-center gap-2 text-lg shadow-lg shadow-amber-900/30"
           >
             <Plus className="w-5 h-5" />
             Log Practice
@@ -1675,33 +1683,33 @@ function PracticeTrackerApp() {
 
       {/* Quick Log Modal */}
       {showQuickLog && (
-        <div className="fixed inset-0 bg-black/40 z-50 modal-overlay flex items-end sm:items-center justify-center">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-auto modal-content">
-            <div className="sticky top-0 bg-white px-5 py-4 border-b border-stone-100 flex items-center justify-between z-10">
-              <h2 className="text-lg font-semibold text-stone-900">Log Practice</h2>
+        <div className="fixed inset-0 bg-black/60 z-50 modal-overlay flex items-end sm:items-center justify-center">
+          <div className="bg-slate-800 rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-auto modal-content">
+            <div className="sticky top-0 bg-slate-800 px-5 py-4 border-b border-slate-700 flex items-center justify-between z-10">
+              <h2 className="text-lg font-semibold text-slate-100">Log Practice</h2>
               <button 
                 onClick={() => setShowQuickLog(false)}
-                className="p-2 -mr-2 hover:bg-stone-100 rounded-full"
+                className="p-2 -mr-2 hover:bg-slate-700 rounded-full"
               >
-                <X className="w-5 h-5 text-stone-500" />
+                <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
             <div className="p-5 space-y-5">
               {/* Date */}
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">Date</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Date</label>
                 <input
                   type="date"
                   value={logDate}
                   onChange={(e) => setLogDate(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none text-stone-900"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-600 bg-slate-700 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-slate-100"
                 />
               </div>
 
               {/* Duration */}
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">Duration</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Duration</label>
                 <div className="flex flex-wrap gap-2">
                   {DURATION_PRESETS.map(mins => (
                     <button
@@ -1717,7 +1725,7 @@ function PracticeTrackerApp() {
 
               {/* Focus Areas */}
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">Focus Areas</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Focus Areas</label>
                 <div className="flex flex-wrap gap-2">
                   {FOCUS_OPTIONS.map(opt => (
                     <button
@@ -1733,15 +1741,15 @@ function PracticeTrackerApp() {
 
               {/* Drills (PRO only) */}
               {isPro && logFocus.length > 0 && (
-                <div className="bg-violet-50/50 rounded-xl p-4">
+                <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/20">
                   <div className="flex items-center gap-2 mb-3">
-                    <label className="text-sm font-medium text-stone-700">Specific Drills</label>
+                    <label className="text-sm font-medium text-slate-300">Specific Drills</label>
                     <span className="pro-badge">Pro</span>
                   </div>
                   <div className="space-y-3">
                     {logFocus.map(focusId => (
                       <div key={focusId}>
-                        <p className="text-xs text-stone-500 uppercase tracking-wide mb-2">
+                        <p className="text-xs text-slate-400 uppercase tracking-wide mb-2">
                           {FOCUS_OPTIONS.find(f => f.id === focusId)?.label}
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -1753,7 +1761,7 @@ function PracticeTrackerApp() {
                             >
                               {drill.name}
                               {logDrills.includes(drill.id) && (
-                                <Check className="w-3 h-3 ml-1 inline text-violet-600" />
+                                <Check className="w-3 h-3 ml-1 inline text-amber-400" />
                               )}
                             </button>
                           ))}
@@ -1766,35 +1774,35 @@ function PracticeTrackerApp() {
 
               {/* Note */}
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">
-                  Quick note <span className="text-stone-400 font-normal">(optional)</span>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Quick note <span className="text-slate-500 font-normal">(optional)</span>
                 </label>
                 <input
                   type="text"
                   value={logNote}
                   onChange={(e) => setLogNote(e.target.value.slice(0, 200))}
                   placeholder="What did you work on?"
-                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none text-stone-900 placeholder:text-stone-400"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-600 bg-slate-700 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-slate-100 placeholder:text-slate-500"
                 />
               </div>
 
               {/* Reflection */}
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">
-                  What felt better today? <span className="text-stone-400 font-normal">(optional)</span>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  What felt better today? <span className="text-slate-500 font-normal">(optional)</span>
                 </label>
                 <input
                   type="text"
                   value={logReflection}
                   onChange={(e) => setLogReflection(e.target.value.slice(0, 200))}
                   placeholder="e.g., Timing on swing, catching fly balls..."
-                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none text-stone-900 placeholder:text-stone-400"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-600 bg-slate-700 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-slate-100 placeholder:text-slate-500"
                 />
               </div>
             </div>
 
             {/* Submit */}
-            <div className="sticky bottom-0 bg-white px-5 py-4 border-t border-stone-100">
+            <div className="sticky bottom-0 bg-slate-800 px-5 py-4 border-t border-slate-700">
               <button
                 onClick={handleQuickLog}
                 disabled={logFocus.length === 0 || saving}
@@ -1810,21 +1818,21 @@ function PracticeTrackerApp() {
 
       {/* Goal Edit Modal */}
       {showGoalEdit && (
-        <div className="fixed inset-0 bg-black/40 z-50 modal-overlay flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg modal-content">
-            <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-stone-900">Set Goal</h2>
+        <div className="fixed inset-0 bg-black/60 z-50 modal-overlay flex items-end sm:items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-t-3xl sm:rounded-3xl w-full max-w-lg modal-content">
+            <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-100">Set Goal</h2>
               <button 
                 onClick={() => setShowGoalEdit(null)}
-                className="p-2 -mr-2 hover:bg-stone-100 rounded-full"
+                className="p-2 -mr-2 hover:bg-slate-700 rounded-full"
               >
-                <X className="w-5 h-5 text-stone-500" />
+                <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">Skill Area</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Skill Area</label>
                 <div className="flex flex-wrap gap-2">
                   {FOCUS_OPTIONS.map(opt => (
                     <button
@@ -1842,7 +1850,7 @@ function PracticeTrackerApp() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   What are you working on?
                 </label>
                 <textarea
@@ -1850,16 +1858,16 @@ function PracticeTrackerApp() {
                   onChange={(e) => setEditGoalText(e.target.value)}
                   placeholder="e.g., Keep hands back longer on swing"
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none text-stone-900 placeholder:text-stone-400 resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-600 bg-slate-700 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-slate-100 placeholder:text-slate-500 resize-none"
                 />
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-stone-100 flex gap-3">
+            <div className="px-5 py-4 border-t border-slate-700 flex gap-3">
               <button
                 onClick={() => setShowGoalEdit(null)}
                 disabled={saving}
-                className="flex-1 py-3 rounded-xl border border-stone-200 font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+                className="flex-1 py-3 rounded-xl border border-slate-600 font-medium text-slate-300 hover:bg-slate-700 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1878,18 +1886,18 @@ function PracticeTrackerApp() {
 
       {/* Pro Upsell Modal */}
       {showProUpsell && (
-        <div className="fixed inset-0 bg-black/40 z-50 modal-overlay flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg modal-content">
+        <div className="fixed inset-0 bg-black/60 z-50 modal-overlay flex items-end sm:items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-t-3xl sm:rounded-3xl w-full max-w-lg modal-content">
             <div className="p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-white" />
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-8 h-8 text-slate-900" />
               </div>
-              <h2 className="text-2xl font-bold text-stone-900 mb-2">Upgrade to Pro</h2>
-              <p className="text-stone-600 mb-6">
+              <h2 className="text-2xl font-bold text-slate-100 mb-2">Upgrade to Pro</h2>
+              <p className="text-slate-400 mb-6">
                 Get deeper insights into your practice with charts, trends, and more.
               </p>
 
-              <div className="bg-stone-50 rounded-2xl p-5 mb-6 text-left space-y-3">
+              <div className="bg-slate-700/50 rounded-2xl p-5 mb-6 text-left space-y-3">
                 {[
                   'Visual charts & progress trends',
                   'Track multiple athletes',
@@ -1898,16 +1906,16 @@ function PracticeTrackerApp() {
                   'Track specific drills',
                 ].map((feature, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-violet-600" />
+                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-amber-400" />
                     </div>
-                    <span className="text-stone-700">{feature}</span>
+                    <span className="text-slate-300">{feature}</span>
                   </div>
                 ))}
               </div>
 
-              <p className="text-3xl font-bold text-stone-900 mb-1">$4.99<span className="text-lg font-normal text-stone-500">/month</span></p>
-              <p className="text-sm text-stone-500 mb-6">Cancel anytime</p>
+              <p className="text-3xl font-bold text-slate-100 mb-1">$4.99<span className="text-lg font-normal text-slate-400">/month</span></p>
+              <p className="text-sm text-slate-500 mb-6">Cancel anytime</p>
 
               <button
                 onClick={() => {
@@ -1917,13 +1925,12 @@ function PracticeTrackerApp() {
                   setShowProUpsell(false);
                 }}
                 className="btn-primary w-full mb-3"
-                style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' }}
               >
                 Start Pro Trial
               </button>
               <button
                 onClick={() => setShowProUpsell(false)}
-                className="w-full py-3 text-stone-500 font-medium"
+                className="w-full py-3 text-slate-500 font-medium hover:text-slate-400"
               >
                 Maybe later
               </button>
@@ -1953,8 +1960,8 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
       </div>
     );
   }
