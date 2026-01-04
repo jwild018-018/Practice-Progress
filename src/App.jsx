@@ -971,8 +971,7 @@ function PracticeTrackerApp() {
         {/* Tagline */}
         <div className="text-center pb-2">
           <p className="text-sm text-stone-500 leading-relaxed">
-            Turn "I think we practiced" into something you can actually see.<br />
-            Track consistency and focus without overthinking it.
+            Turn "I think we practiced" into something you can actually see. Track consistency and focus without overthinking it.
           </p>
         </div>
 
@@ -980,7 +979,7 @@ function PracticeTrackerApp() {
         <div className="card p-5">
           <div className="mb-3">
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Weekly Practice Total</p>
-            <p className="text-xs text-stone-400 mt-0.5">Total practice time logged for this week.</p>
+            <p className="text-xs text-stone-400 mt-0.5">Total practice summary logged for this week.</p>
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
@@ -993,10 +992,10 @@ function PracticeTrackerApp() {
             </div>
             <div>
               <p className="text-3xl font-bold text-emerald-600">
-                {practicesThisWeek >= 3 ? '🔥' : practicesThisWeek >= 1 ? '👍' : '—'}
+                {practicesThisWeek >= 4 ? '🏆' : practicesThisWeek >= 3 ? '🔥' : practicesThisWeek >= 1 ? '👍' : '—'}
               </p>
               <p className="text-xs text-stone-500 mt-1">
-                {practicesThisWeek >= 3 ? 'on fire!' : practicesThisWeek >= 1 ? 'good start' : 'let\'s go!'}
+                {practicesThisWeek >= 4 ? 'All-Star!' : practicesThisWeek >= 3 ? 'On fire!' : practicesThisWeek >= 1 ? 'Good start' : 'let\'s go!'}
               </p>
             </div>
           </div>
@@ -1008,7 +1007,7 @@ function PracticeTrackerApp() {
             <div className="flex items-start justify-between mb-1">
               <div>
                 <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Last Practice Focus Areas</p>
-                <p className="text-xs text-stone-400 mt-0.5">What was worked on most recently.</p>
+                <p className="text-xs text-stone-400 mt-0.5">What you worked on most recently.</p>
               </div>
               <div className="flex items-center gap-1 text-stone-500">
                 <Clock className="w-4 h-4" />
@@ -1101,7 +1100,7 @@ function PracticeTrackerApp() {
         <div className="card overflow-hidden">
           <div className="p-4 border-b border-stone-100">
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Recent Practices</p>
-            <p className="text-xs text-stone-400 mt-0.5">A log of recent practices with focus and time spent.</p>
+            <p className="text-xs text-stone-400 mt-0.5">A log of your recent practices with focus and time spent.</p>
           </div>
           <div className="divide-y divide-stone-50">
             {sessions.slice(0, showMorePractices ? 15 : 5).map(session => (
