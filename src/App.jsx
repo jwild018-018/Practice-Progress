@@ -558,13 +558,21 @@ function PracticeTrackerApp() {
   
   // Goal edit state
   const [editGoalText, setEditGoalText] = useState('');
+  const [showMorePractices, setShowMorePractices] = useState(false);
   
   // Calculate stats
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay());
   
-  const weekSessions = sessions.filter(s => new Date(s.date) >= startOfWeek);
+  const weekSessions = sessions.filter(s => {
+    // Parse session date as local time
+    const [year, month, day] = s.date.split('-').map(Number);
+    const sessionDate = new Date(year, month - 1, day);
+    return sessionDate >= startOfWeek;
+  });
   const practicesThisWeek = weekSessions.length;
   const minutesThisWeek = weekSessions.reduce((sum, s) => sum + s.duration, 0);
   const lastSession = sessions[0];
@@ -756,13 +764,18 @@ function PracticeTrackerApp() {
   };
 
   const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
+    // Parse date string as local time (not UTC)
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    if (date.toDateString() === today.toDateString()) return 'Today';
-    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    if (date.getTime() === today.getTime()) return 'Today';
+    if (date.getTime() === yesterday.getTime()) return 'Yesterday';
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
@@ -955,8 +968,20 @@ function PracticeTrackerApp() {
 
       <main className="max-w-lg mx-auto px-4 py-6 pb-32 space-y-5">
         
+        {/* Tagline */}
+        <div className="text-center pb-2">
+          <p className="text-sm text-stone-500 leading-relaxed">
+            Turn "I think we practiced" into something you can actually see.<br />
+            Track consistency and focus without overthinking it.
+          </p>
+        </div>
+
         {/* Quick Stats */}
         <div className="card p-5">
+          <div className="mb-3">
+            <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Weekly Practice Total</p>
+            <p className="text-xs text-stone-400 mt-0.5">Total practice time logged for this week.</p>
+          </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-3xl font-bold text-stone-900">{practicesThisWeek}</p>
@@ -980,16 +1005,17 @@ function PracticeTrackerApp() {
         {/* Last Practice */}
         {lastSession && (
           <div className="card p-5">
-            <div className="flex items-start justify-between mb-3">
+            <div className="flex items-start justify-between mb-1">
               <div>
-                <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Last Practice</p>
-                <p className="text-sm text-stone-600 mt-0.5">{formatDate(lastSession.date)}</p>
+                <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Last Practice Focus Areas</p>
+                <p className="text-xs text-stone-400 mt-0.5">What was worked on most recently.</p>
               </div>
               <div className="flex items-center gap-1 text-stone-500">
                 <Clock className="w-4 h-4" />
                 <span className="text-sm font-medium">{lastSession.duration} min</span>
               </div>
             </div>
+            <p className="text-sm text-stone-600 mb-3">{formatDate(lastSession.date)}</p>
             <div className="flex flex-wrap gap-2 mb-2">
               {lastSession.focus.map(f => {
                 const opt = FOCUS_OPTIONS.find(o => o.id === f);
@@ -1001,18 +1027,18 @@ function PracticeTrackerApp() {
               })}
             </div>
             {lastSession.note && (
-              <p className="text-sm text-stone-600 italic">"{lastSession.note}"</p>
+              <p className="text-sm text-stone-600 italic mt-3">"{lastSession.note}"</p>
             )}
           </div>
         )}
 
         {/* Current Goal(s) */}
         <div className="card p-5">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 text-emerald-600" />
               <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">
-                {isPro ? 'Goals' : 'Current Goal'}
+                Weekly Goal
               </p>
               {isPro && <span className="pro-badge">Up to 3</span>}
             </div>
@@ -1027,6 +1053,7 @@ function PracticeTrackerApp() {
               {activeGoals.length > 0 ? 'Edit' : 'Add'}
             </button>
           </div>
+          <p className="text-xs text-stone-400 mb-3">The main focus or objective you're working toward this week.</p>
           
           {isPro ? (
             // Pro: Show up to 3 goals
@@ -1074,9 +1101,10 @@ function PracticeTrackerApp() {
         <div className="card overflow-hidden">
           <div className="p-4 border-b border-stone-100">
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Recent Practices</p>
+            <p className="text-xs text-stone-400 mt-0.5">A log of recent practices with focus and time spent.</p>
           </div>
           <div className="divide-y divide-stone-50">
-            {sessions.slice(0, 5).map(session => (
+            {sessions.slice(0, showMorePractices ? 15 : 5).map(session => (
               <div key={session.id} className="p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-lg">
                   {FOCUS_OPTIONS.find(f => f.id === session.focus[0])?.emoji || '🥎'}
@@ -1093,6 +1121,14 @@ function PracticeTrackerApp() {
               </div>
             ))}
           </div>
+          {sessions.length > 5 && (
+            <button
+              onClick={() => setShowMorePractices(!showMorePractices)}
+              className="w-full p-3 text-sm text-emerald-600 font-medium hover:bg-stone-50 border-t border-stone-100"
+            >
+              {showMorePractices ? 'Show Less' : `Show More (${Math.min(sessions.length, 15) - 5} more)`}
+            </button>
+          )}
         </div>
 
         {/* Pro Upsell (only show for free users) */}
