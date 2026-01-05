@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Plus, Check, Clock, Target, ChevronRight, Sparkles, X, Loader2, AlertCircle, LogOut, ChevronDown, User, Download, Table, FileText, BarChart3 } from 'lucide-react';
+import { Plus, Check, Clock, Target, ChevronRight, Sparkles, X, Loader2, AlertCircle, LogOut, ChevronDown, User, Download, Table, FileText, BarChart3, Trash2 } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -124,11 +124,18 @@ const db = {
     return { data, error: null };
   },
 
-  async delete(table, { eq = {} } = {}) {
+  async delete(table, idOrOptions) {
     let url = `${supabaseUrl}/rest/v1/${table}?`;
-    Object.entries(eq).forEach(([col, val]) => {
-      url += `${col}=eq.${val}&`;
-    });
+    
+    // Support both db.delete('table', 'uuid') and db.delete('table', { eq: { col: val } })
+    if (typeof idOrOptions === 'string') {
+      url += `id=eq.${idOrOptions}`;
+    } else {
+      const { eq = {} } = idOrOptions;
+      Object.entries(eq).forEach(([col, val]) => {
+        url += `${col}=eq.${val}&`;
+      });
+    }
     
     const token = await getAuthToken();
     const response = await fetch(url, {
@@ -367,7 +374,7 @@ const CHART_COLORS = {
 };
 
 // Athlete Selector (Pro only - always shows for Pro users)
-function AthleteSelector({ athletes, currentAthlete, onSelectAthlete, onAddAthlete, isPro }) {
+function AthleteSelector({ athletes, currentAthlete, onSelectAthlete, onAddAthlete, onDeleteAthlete, isPro }) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Free users only see current athlete name (no selector)
@@ -395,35 +402,52 @@ function AthleteSelector({ athletes, currentAthlete, onSelectAthlete, onAddAthle
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 w-56 bg-slate-800 rounded-xl shadow-lg border border-slate-700 py-1 z-50">
+          <div className="absolute top-full left-0 mt-1 w-64 bg-slate-800 rounded-xl shadow-lg border border-slate-700 py-1 z-50">
             <div className="px-3 py-2 border-b border-slate-700">
               <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Switch Athlete</p>
             </div>
             
             {athletes.map(athlete => (
-              <button
+              <div
                 key={athlete.id}
-                onClick={() => {
-                  onSelectAthlete(athlete);
-                  setIsOpen(false);
-                }}
-                className={`w-full px-4 py-2.5 text-left hover:bg-slate-700 flex items-center gap-3 ${
+                className={`flex items-center gap-3 px-4 py-2.5 hover:bg-slate-700 group ${
                   athlete.id === currentAthlete?.id ? 'bg-amber-500/10' : ''
                 }`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  athlete.id === currentAthlete?.id ? 'bg-amber-500/20' : 'bg-slate-700'
-                }`}>
-                  <User className={`w-4 h-4 ${
-                    athlete.id === currentAthlete?.id ? 'text-amber-400' : 'text-slate-400'
-                  }`} />
-                </div>
-                <span className={`font-medium ${
-                  athlete.id === currentAthlete?.id ? 'text-amber-400' : 'text-slate-300'
-                }`}>
-                  {athlete.name}
-                </span>
-              </button>
+                <button
+                  onClick={() => {
+                    onSelectAthlete(athlete);
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center gap-3 flex-1"
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    athlete.id === currentAthlete?.id ? 'bg-amber-500/20' : 'bg-slate-700'
+                  }`}>
+                    <User className={`w-4 h-4 ${
+                      athlete.id === currentAthlete?.id ? 'text-amber-400' : 'text-slate-400'
+                    }`} />
+                  </div>
+                  <span className={`font-medium ${
+                    athlete.id === currentAthlete?.id ? 'text-amber-400' : 'text-slate-300'
+                  }`}>
+                    {athlete.name}
+                  </span>
+                </button>
+                {athletes.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsOpen(false);
+                      onDeleteAthlete(athlete);
+                    }}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Delete athlete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             ))}
             
             <div className="border-t border-slate-700 mt-1 pt-1">
@@ -1406,6 +1430,63 @@ function PracticeTrackerApp() {
     }
   };
 
+  // ----------------------------------------------------------------------------
+  // DELETE PRACTICE
+  // ----------------------------------------------------------------------------
+  const deletePractice = async (sessionId) => {
+    if (!confirm('Delete this practice? This cannot be undone.')) return;
+    
+    setSaving(true);
+    setError(null);
+
+    try {
+      const { error } = await db.delete('sessions', sessionId);
+      if (error) throw error;
+      
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+    } catch (err) {
+      console.error('Error deleting practice:', err);
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ----------------------------------------------------------------------------
+  // DELETE ATHLETE
+  // ----------------------------------------------------------------------------
+  const deleteAthlete = async (athleteToDelete) => {
+    if (athletes.length <= 1) {
+      setError("Can't delete your only athlete");
+      return;
+    }
+    
+    if (!confirm(`Delete ${athleteToDelete.name} and all their practice data? This cannot be undone.`)) return;
+    
+    setSaving(true);
+    setError(null);
+
+    try {
+      const { error } = await db.delete('athletes', athleteToDelete.id);
+      if (error) throw error;
+      
+      const remainingAthletes = athletes.filter(a => a.id !== athleteToDelete.id);
+      setAthletes(remainingAthletes);
+      
+      // If we deleted the current athlete, switch to another one
+      if (athlete?.id === athleteToDelete.id) {
+        const newAthlete = remainingAthletes[0];
+        setAthlete(newAthlete);
+        localStorage.setItem('selectedAthleteId', newAthlete.id);
+      }
+    } catch (err) {
+      console.error('Error deleting athlete:', err);
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const formatDate = (dateStr) => {
     const [year, month, day] = dateStr.split('-').map(Number);
     const date = new Date(year, month - 1, day);
@@ -1579,6 +1660,7 @@ function PracticeTrackerApp() {
                   currentAthlete={athlete}
                   onSelectAthlete={handleSelectAthlete}
                   onAddAthlete={() => setShowAddAthlete(true)}
+                  onDeleteAthlete={deleteAthlete}
                   isPro={isPro}
                 />
                 <p className="text-sm text-slate-400">
@@ -1624,7 +1706,8 @@ function PracticeTrackerApp() {
         {/* Tagline */}
         <div className="text-center pb-2">
           <p className="text-sm text-slate-400 leading-relaxed">
-            Turn "I think we practiced" into something you can actually see. Track consistency and focus without overthinking it.
+            Turn "I think we practiced" into something you can actually see.<br />
+            Track consistency and focus without overthinking it.
           </p>
         </div>
 
@@ -1763,7 +1846,7 @@ function PracticeTrackerApp() {
           </div>
           <div className="divide-y divide-slate-700/50">
             {sessions.slice(0, showMorePractices ? 15 : 5).map(session => (
-              <div key={session.id} className="p-4 flex items-center gap-3">
+              <div key={session.id} className="p-4 flex items-center gap-3 group">
                 <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-lg">
                   {FOCUS_OPTIONS.find(f => f.id === session.focus[0])?.emoji || '🥎'}
                 </div>
@@ -1773,8 +1856,15 @@ function PracticeTrackerApp() {
                     {session.focus.map(f => FOCUS_OPTIONS.find(o => o.id === f)?.label).join(', ')}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex items-center gap-2">
                   <p className="text-sm font-medium text-slate-300">{session.duration}m</p>
+                  <button
+                    onClick={() => deletePractice(session.id)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Delete practice"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
