@@ -2,6 +2,8 @@
 
 ## Nice-to-haves (Post-Beta)
 
+- [ ] **Edit athlete name** - Allow renaming athletes
+- [ ] **Stripe integration** - Real Pro upgrade flow
 - [ ] **Password reset flow** - Let users recover their account if they forget password
 - [ ] **Edit existing practices** - Currently can only delete; add ability to modify date, duration, focus, notes
 - [ ] **Onboarding tips for new users** - First-time walkthrough or tooltips explaining features
