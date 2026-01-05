@@ -441,7 +441,7 @@ function AthleteSelector({ athletes, currentAthlete, onSelectAthlete, onAddAthle
                       setIsOpen(false);
                       onDeleteAthlete(athlete);
                     }}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-600 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                     title="Delete athlete"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -1860,7 +1860,7 @@ function PracticeTrackerApp() {
                   <p className="text-sm font-medium text-slate-300">{session.duration}m</p>
                   <button
                     onClick={() => deletePractice(session.id)}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-700 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                     title="Delete practice"
                   >
                     <Trash2 className="w-4 h-4" />
