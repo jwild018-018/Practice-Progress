@@ -687,16 +687,189 @@ function ExportButton({ sessions, athlete, isPro }) {
     setIsOpen(false);
   };
 
-  const exportJSON = () => {
-    const data = {
-      athlete: { name: athlete.name, id: athlete.id },
-      exportedAt: new Date().toISOString(),
-      totalPractices: sessions.length,
-      totalMinutes: sessions.reduce((sum, s) => sum + s.duration, 0),
-      practices: sessions
-    };
+  const exportPDF = () => {
+    // Calculate stats
+    const totalMinutes = sessions.reduce((sum, s) => sum + s.duration, 0);
+    const focusCounts = {};
+    sessions.forEach(s => {
+      (s.focus || []).forEach(f => {
+        focusCounts[f] = (focusCounts[f] || 0) + 1;
+      });
+    });
     
-    downloadFile(JSON.stringify(data, null, 2), `${athlete.name}-practices.json`, 'application/json');
+    // Calculate weekly data for chart (last 4 weeks)
+    const now = new Date();
+    const weeklyData = [];
+    for (let i = 3; i >= 0; i--) {
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay() - (i * 7));
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      let minutes = 0;
+      sessions.forEach(s => {
+        const [year, month, day] = s.date.split('-').map(Number);
+        const sessionDate = new Date(year, month - 1, day);
+        if (sessionDate >= weekStart && sessionDate <= weekEnd) {
+          minutes += s.duration;
+        }
+      });
+      
+      weeklyData.push({
+        label: i === 0 ? 'This Week' : i === 1 ? 'Last Week' : `${i + 1}w ago`,
+        minutes
+      });
+    }
+    const maxWeeklyMinutes = Math.max(...weeklyData.map(w => w.minutes), 1);
+    
+    // Focus distribution for pie chart
+    const focusColors = {
+      hitting: '#d4a418',
+      pitching: '#60a5fa',
+      fielding: '#34d399',
+      conditioning: '#f472b6'
+    };
+    const totalFocusSessions = Object.values(focusCounts).reduce((a, b) => a + b, 0);
+    
+    // Build HTML content for PDF
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${athlete.name}'s Practice Report</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #1e293b; }
+          .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #d4a418; }
+          .header h1 { font-size: 24px; color: #1e293b; margin-bottom: 5px; }
+          .header p { color: #64748b; font-size: 14px; }
+          .stats { display: flex; justify-content: space-around; margin-bottom: 30px; padding: 20px; background: #f8fafc; border-radius: 8px; }
+          .stat { text-align: center; }
+          .stat-value { font-size: 28px; font-weight: bold; color: #d4a418; }
+          .stat-label { font-size: 12px; color: #64748b; margin-top: 4px; }
+          .section { margin-bottom: 25px; }
+          .section h2 { font-size: 16px; color: #1e293b; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
+          .charts-row { display: flex; gap: 30px; margin-bottom: 25px; }
+          .chart-container { flex: 1; background: #f8fafc; border-radius: 8px; padding: 20px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .chart-title { font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 15px; }
+          .bar-chart { display: flex; align-items: flex-end; justify-content: space-around; height: 120px; gap: 10px; }
+          .bar-wrapper { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; }
+          .bar { width: 100%; max-width: 50px; background-color: #d4a418 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; border-radius: 4px 4px 0 0; min-height: 4px; }
+          .bar-label { font-size: 10px; color: #64748b; margin-top: 8px; text-align: center; }
+          .bar-value { font-size: 11px; font-weight: 600; color: #1e293b; margin-bottom: 4px; }
+          .focus-bars { }
+          .focus-bar-row { display: flex; align-items: center; margin-bottom: 10px; }
+          .focus-bar-label { width: 90px; font-size: 12px; color: #64748b; text-transform: capitalize; }
+          .focus-bar-track { flex: 1; height: 20px; background-color: #e2e8f0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; border-radius: 10px; overflow: hidden; margin: 0 10px; }
+          .focus-bar-fill { height: 100%; border-radius: 10px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; min-width: 4px; }
+          .focus-bar-value { width: 50px; font-size: 12px; font-weight: 600; color: #1e293b; text-align: right; }
+          .focus-list { display: flex; flex-wrap: wrap; gap: 8px; }
+          .focus-item { background: #f1f5f9; padding: 6px 12px; border-radius: 20px; font-size: 13px; }
+          table { width: 100%; border-collapse: collapse; font-size: 13px; }
+          th { text-align: left; padding: 10px 8px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; font-weight: 600; }
+          td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; }
+          tr:hover { background: #f8fafc; }
+          .footer { margin-top: 30px; text-align: center; font-size: 11px; color: #94a3b8; }
+          @media print {
+            body { padding: 20px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .charts-row { break-inside: avoid; }
+            .section { break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${athlete.name}'s Practice Report</h1>
+          <p>Generated on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
+        
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-value">${sessions.length}</div>
+            <div class="stat-label">Total Practices</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">${totalMinutes}</div>
+            <div class="stat-label">Total Minutes</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">${sessions.length > 0 ? Math.round(totalMinutes / sessions.length) : 0}</div>
+            <div class="stat-label">Avg Duration</div>
+          </div>
+        </div>
+        
+        <div class="charts-row">
+          <div class="chart-container">
+            <div class="chart-title">WEEKLY PROGRESS (Minutes)</div>
+            <div class="bar-chart">
+              ${weeklyData.map(w => `
+                <div class="bar-wrapper">
+                  <div class="bar-value">${w.minutes}</div>
+                  <div class="bar" style="height: ${Math.max((w.minutes / maxWeeklyMinutes) * 100, w.minutes > 0 ? 8 : 4)}px; background-color: #d4a418 !important;"></div>
+                  <div class="bar-label">${w.label}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <div class="chart-container">
+            <div class="chart-title">FOCUS DISTRIBUTION</div>
+            <div class="focus-bars">
+              ${Object.entries(focusCounts).map(([focus, count]) => `
+                <div class="focus-bar-row">
+                  <div class="focus-bar-label">${focus}</div>
+                  <div class="focus-bar-track">
+                    <div class="focus-bar-fill" style="width: ${(count / totalFocusSessions) * 100}%; background-color: ${focusColors[focus] || '#94a3b8'} !important;"></div>
+                  </div>
+                  <div class="focus-bar-value">${Math.round((count / totalFocusSessions) * 100)}%</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <h2>Practice Log</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Duration</th>
+                <th>Focus Areas</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sessions.slice(0, 50).map(s => `
+                <tr>
+                  <td>${new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                  <td>${s.duration} min</td>
+                  <td>${(s.focus || []).join(', ')}</td>
+                  <td>${s.note || '—'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          ${sessions.length > 50 ? `<p style="margin-top: 10px; font-size: 12px; color: #64748b;">Showing 50 of ${sessions.length} practices</p>` : ''}
+        </div>
+        
+        <div class="footer">
+          Practice Tracker • ${new Date().getFullYear()}
+        </div>
+      </body>
+      </html>
+    `;
+    
+    // Open print dialog (user can save as PDF)
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
     setIsOpen(false);
   };
 
@@ -726,13 +899,13 @@ function ExportButton({ sessions, athlete, isPro }) {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full right-0 mt-1 w-44 bg-slate-800 rounded-xl shadow-lg border border-slate-700 py-1 z-50">
+            <button onClick={exportPDF} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-slate-500" />
+              <span className="text-slate-300">PDF Report</span>
+            </button>
             <button onClick={exportCSV} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2">
               <Table className="w-4 h-4 text-slate-500" />
               <span className="text-slate-300">CSV Spreadsheet</span>
-            </button>
-            <button onClick={exportJSON} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-slate-500" />
-              <span className="text-slate-300">JSON Data</span>
             </button>
           </div>
         </>
@@ -1451,8 +1624,7 @@ function PracticeTrackerApp() {
         {/* Tagline */}
         <div className="text-center pb-2">
           <p className="text-sm text-slate-400 leading-relaxed">
-            Turn "I think we practiced" into something you can actually see.<br />
-            Track consistency and focus without overthinking it.
+            Turn "I think we practiced" into something you can actually see. Track consistency and focus without overthinking it.
           </p>
         </div>
 
@@ -1496,7 +1668,7 @@ function PracticeTrackerApp() {
             <div className="flex items-start justify-between mb-1">
               <div>
                 <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Last Practice Focus Areas</p>
-                <p className="text-xs text-slate-500 mt-0.5">What did you do last time?</p>
+                <p className="text-xs text-slate-500 mt-0.5">What was worked on most recently.</p>
               </div>
               <div className="flex items-center gap-1 text-slate-400">
                 <Clock className="w-4 h-4" />
@@ -1587,7 +1759,7 @@ function PracticeTrackerApp() {
         <div className="card overflow-hidden">
           <div className="p-4 border-b border-slate-700">
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Recent Practices</p>
-            <p className="text-xs text-slate-500 mt-0.5">What have you focused on recently?</p>
+            <p className="text-xs text-slate-500 mt-0.5">A log of recent practices with focus and time spent.</p>
           </div>
           <div className="divide-y divide-slate-700/50">
             {sessions.slice(0, showMorePractices ? 15 : 5).map(session => (
